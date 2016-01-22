@@ -16,6 +16,7 @@ m=Cascade(ParallelAdd(Wire(),Cascade(Gain(-1),Delay(2))),Delay(3))
 m.transduce([1,0,0,0],verbose=True)
 
 "fibonacci"
+
 fib=Feedback(Cascade(Parallel(Delay(1),Cascade(Delay(1),Delay(0))),Adder()))
 
 fib.run(verbose=True)
@@ -44,6 +45,7 @@ plt.axhline(y=0)
 p=0.85*(math.e**(1j*math.pi/4))  
 
 "Y/X=1/((1-p)R)"
+
 m=Cascade(Delta(),Cascade(FeedbackAdd(Delay(0),Gain(p)),Gain(1)))
 
 Y=m.transduce(X)
