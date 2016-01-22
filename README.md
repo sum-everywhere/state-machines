@@ -43,7 +43,7 @@ plt.axhline(y=0)
 
 '''p=r*e**(j*omega)'''
 
-p=0.85*(math.e**(1j*math.pi/4))  
+p=0.85\*(math.e\*\*(1j\*math.pi/4))  
 
 '''Y/X=1/((1-p)R)'''
 
