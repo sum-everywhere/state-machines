@@ -12,10 +12,8 @@ from sm import SM,Parallel,Cascade,Delay,Feedback,FeedbackAdd,Wire, \
 
 # Y/X=(1-R**2)(R**3)
 m=Cascade(ParallelAdd(Wire(),Cascade(Gain(-1),Delay(2))),Delay(3)) 
-
 m.transduce([1,0,0,0],verbose=True)
 
 # fibonacci
 fib=Feedback(Cascade(Parallel(Delay(1),Cascade(Delay(1),Delay(0))),Adder()))
-
 fib.run(verbose=True)
