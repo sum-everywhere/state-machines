@@ -32,17 +32,28 @@ sys.path.append(".")
 from sm import SM,Cascade,Delay,FeedbackAdd,Gain,Delta
 
 X=range(-1,40)
+
 plt.axis('auto')
+
 plt.axvline(x=0)
+
 plt.axhline(y=0)
+
 # p=r*e**(j*omega)
+
 p=0.85*(math.e**(1j*math.pi/4))  
+
 # Y/X=1/((1-p)R)
 m=Cascade(Delta(),Cascade(FeedbackAdd(Delay(0),Gain(p)),Gain(1)))
+
 Y=m.transduce(X)
+
 A=[y.real for y in Y]
+
 B=[y.imag for y in Y]
+
 plt.plot(A,B,'bo')
-plt.show
+
+plt.show()
 
 
