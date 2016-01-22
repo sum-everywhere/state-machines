@@ -33,7 +33,7 @@ sys.path.append(".")
 
 from sm import SM,Cascade,Delay,FeedbackAdd,Gain,Delta
 
-X=range(-1,40)
+X=range(-1,20)
 
 plt.axis('auto')
 
