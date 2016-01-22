@@ -4,17 +4,6 @@ tagNo=0
 k=-1.5
 dDesired=1.0
 deltaT=0.1
-'''
-class SMMeta(type):
-    def __new__(meta,name,bases,dct):
-        global tagNo
-        tagNo+=1
-        return super(SMMeta,meta).__new__(meta,name,bases,dct)
-    def __init__(cls,name,bases,dct):
-        global tagNo
-        cls.classTag=cls.__name__+"_"+str(tagNo)
-        super(SMMeta,cls).__init__(name,bases,dct)
-'''
 
 class SM(object):
     #__metaclass__=SMMeta
