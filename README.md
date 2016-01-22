@@ -41,7 +41,7 @@ plt.axvline(x=0)
 
 plt.axhline(y=0)
 
-'''p=r*e**(j*omega)'''
+'''p=r\*e\*\*(j\*omega)'''
 
 p=0.85\*(math.e\*\*(1j\*math.pi/4))  
 
