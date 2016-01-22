@@ -3,8 +3,11 @@ Pls refer to mit open-course 6.01sc. No src available, so I wrote mine.
 
 
 example:
+
 import sys
+
 sys.path.append(".")
+
 from sm import SM,Parallel,Cascade,Delay,Feedback,FeedbackAdd,Wire, \
      Feedback2,WallController,WallWorld,Accumulator,Switch,Mux,ConsumeFiveValues, \
      Repeat,Sequence,RepeatUntil,Until,Wire,CountingStateMachine,Multiplier, \
