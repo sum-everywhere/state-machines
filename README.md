@@ -8,10 +8,7 @@ import sys
 
 sys.path.append(".")
 
-from sm import SM,Parallel,Cascade,Delay,Feedback,FeedbackAdd,Wire, \
-     Feedback2,WallController,WallWorld,Accumulator,Switch,Mux,ConsumeFiveValues, \
-     Repeat,Sequence,RepeatUntil,Until,Wire,CountingStateMachine,Multiplier, \
-     ParallelAdd,Gain,Diff,Adder
+from sm import SM,Parallel,Cascade,Delay,Feedback,Wire,ParallelAdd,Gain,Adder
 
 # Y/X=(1-R**2)(R**3)
 m=Cascade(ParallelAdd(Wire(),Cascade(Gain(-1),Delay(2))),Delay(3)) 
@@ -25,34 +22,15 @@ fib.run(verbose=True)
 
 
 example 2:
-'''
+
 from matplotlib import pyplot as plt
 
 import math
 
 sys.path.append(".")
 
-from sm import SM,Parallel,Cascade,Delay,Feedback,FeedbackAdd,Wire, \
-     Feedback2,WallController,WallWorld,Accumulator,Switch,Mux,ConsumeFiveValues, \
-     Repeat,Sequence,RepeatUntil,Until,Wire,CountingStateMachine,Multiplier, \
-     ParallelAdd,Gain,Diff,Adder
+from sm import SM,Cascade,Delay,FeedbackAdd,Gain,Delta
 
-def delta(x):
-    if x==0:
-        return 1
-    return 0
-class Delta(SM):
-    def __init__(self):
-        SM.__init__(self)
-        self.startState=0
-    def getNextValues(self,state,inp):
-        state=delta(inp)
-        if inp=='undefined':
-            if state==-1:
-                return (None,1)
-            else:
-                return (None,0)
-        return (state,state)
 X=range(-1,40)
 plt.axis('auto')
 plt.axvline(x=0)
@@ -66,5 +44,5 @@ A=[y.real for y in Y]
 B=[y.imag for y in Y]
 plt.plot(A,B,'bo')
 plt.show
-'''
+
 
