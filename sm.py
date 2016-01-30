@@ -653,4 +653,20 @@ class Adder(SM):
             return state
         (i1,i2)=inp
         return i1+i2
+        
+class LTISM(SM):
+    def __init__(self,dCoeffs,cCoeffs):
+        SM.__init__(self)
+        j=len(dCoeffs)-1
+        k=len(cCoeffs)
+
+        self.cCoeffs=cCoeffs
+        self.dCoeffs=dCoeffs
+        self.startState=([0.0]*j,[0.0]*k)
+
+    def getNextValues(self,state,inp):
+        (inputs,outputs)=state
+        inputs=[inp]+inputs
+        currentOutput=sum([a*b for (a,b) in zip(self.dCoeffs,inputs)])+sum([a*b for (a,b) in zip(self.cCoeffs,outputs)])
+        return ((inputs[:-1],[currentOutput]+outputs[:-1]),currentOutput)
 
