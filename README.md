@@ -59,4 +59,10 @@ plt.plot(A,B,'bo')
 
 plt.show()
 
+#Example 3:
+
+m=LTISM([0,1],[0,1])
+
+m.transduce(range(20),verbose=True)
+
 
