@@ -211,9 +211,12 @@ class Feedback2(Feedback):
         return o
 
 class Wire(SM):
+    def __init__(self):
+        SM.__init__(self)
+        self.startState=0
     def getNextState(self,state,inp):
         if inp=='undefined':
-            return 0
+            return self.state
         return inp
 
 class FeedbackAdd(SM):
