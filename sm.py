@@ -7,7 +7,6 @@ deltaT=0.1
 
 class SM(object):
     #__metaclass__=SMMeta
-    # 1 in 1 out, out=nextstate
     def __init__(self):
         global tagNo
         tagNo+=1
@@ -23,7 +22,7 @@ class SM(object):
         return (nextState,nextState)
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)
-        self.state=s    # next state
+        self.state=s    # memorize the necessity value for the next step
         self.inp=inp
         self.out=o
         if verbose==True:
@@ -50,7 +49,6 @@ class SM(object):
         return False
 
 class Delay(SM):
-    # 1 in 1 out, state=o[t+1]
     def __init__(self,v0):
         SM.__init__(self)
         self.startState=v0
@@ -60,7 +58,7 @@ class Delay(SM):
         return (inp,state)
 
 class Parallel(SM):
-    # 1 in 1 tuple out, state=(sm1.state,sm2.state)
+    # 1 in 2 out
     def __init__(self,sm1,sm2):
         SM.__init__(self)
         self.combinator=True 
@@ -74,7 +72,11 @@ class Parallel(SM):
     def getNextValues(self,state,inp):
         (s1,s2)=state
         (newS1,o1)=self.m1.getNextValues(s1,inp)
+        if isinstance(o1,list) or isinstance(o1,tuple):
+            o1=o1[-1]
         (newS2,o2)=self.m2.getNextValues(s2,inp)
+        if isinstance(o2,list) or isinstance(o2,tuple):
+            o2=o2[-1]
         return ((newS1,newS2),(o1,o2))
     def step(self,inp,verbose=False):
         o1=self.m1.step(inp)
@@ -85,10 +87,18 @@ class Parallel(SM):
         return (o1,o2)
     def transduce(self,inputs,verbose=False):
         self.start()
+        o=[]
         if verbose==True:
             print "Start state: "+str(self.startState)
-            print  " "+self.classTag
-        return [self.step(inp,verbose) for inp in inputs  if not self.done(self.state)]
+            for i in range(len(inputs)):
+                if not self.done(self.state):
+                    print
+                    print "Inputs["+str(i)+"]: "+str(inputs[i])
+                    print " "+self.classTag 
+                    o.append(self.step(inputs[i],verbose))
+            return o
+        else:
+            return [self.step(inp,verbose) for inp in inputs  if not self.done(self.state)]
     def debug(self,indent=0):
         self.indent=indent
         if self.m1.combinator:
@@ -99,7 +109,6 @@ class Parallel(SM):
         self.m2.debug(self.indent+1)
         
 class Cascade(SM):
-    # 1 in 1 out, state=(sm1.state,sm2.state)
     def __init__(self,sm1,sm2):
         SM.__init__(self)
         self.combinator=True
@@ -111,10 +120,12 @@ class Cascade(SM):
         self.m1.start()
         self.m2.start()
     def getNextValues(self,state,inp):
-        s1,o1=self.m1.getNextValues(state[0],inp) 
+        s1,o1=self.m1.getNextValues(state[0],inp)      
         if isinstance(o1,list) or isinstance(o1,tuple):
             o1=o1[-1]
         s2,o2=self.m2.getNextValues(state[1],o1)
+        if isinstance(o2,list) or isinstance(o2,tuple):
+            o2=o2[-1]
         return ((s1,s2),o2)
     def step(self,inp,verbose=False):
         (s,_)=self.getNextValues(self.state,inp)
@@ -166,12 +177,16 @@ class Feedback(SM):
         self.m=sm
         self.startState=self.m.startState
     def getNextValues(self,state,inp):
-        (_,o)=self.m.getNextValues(state,'undefined') 
+        (_,o)=self.m.getNextValues(state,'undefined')
+        if isinstance(o,list) or isinstance(o,tuple):
+            o=o[-1]
         (newS,_)=self.m.getNextValues(state,o)
+        if isinstance(o,list) or isinstance(o,tuple):
+            o=o[-1]
         return (newS,o)
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)    
-        self.m.step(o)                            
+        self.m.step(o)         # feedback input                    
         self.state=s
         if verbose==True:
             self.debug()
@@ -200,11 +215,15 @@ class Feedback(SM):
 class Feedback2(Feedback):
     def getNextValues(self,state,inp):
         (_,o)=self.m.getNextValues(state,(inp,'undefined'))
-        (newS,_)=self.m.getNextValues(state,(inp,o))         
+        if isinstance(o,list) or isinstance(o,tuple):
+            o=o[-1]
+        (newS,_)=self.m.getNextValues(state,(inp,o))
+        if isinstance(o,list) or isinstance(o,tuple):
+            o=o[-1]
         return (newS,o)
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)    
-        self.m.step(inp)         # feedback2 needs an input                     
+        self.m.step(inp)                         
         self.state=s
         if verbose==True:
             self.debug()
@@ -225,20 +244,22 @@ class FeedbackAdd(SM):
         self.combinator=True
         self.m1=sm1
         self.m2=sm2
-        self.startState=(sm1.startState,sm2.startState)        
+        self.startState=(sm1.startState,sm2.startState)
     def getNextValues(self,state,inp):
         (_,o1)=self.m1.getNextValues(state[0],'undefined')
         if isinstance(o1,list) or isinstance(o1,tuple):
             o1=o1[-1]
         (_,o2)=self.m2.getNextValues(state[1],o1)
-        o2+=inp          
+        if isinstance(o2,list) or isinstance(o2,tuple):
+            o2=o2[-1]
+        o2+=inp           # Add
         (newS1,o)=self.m1.getNextValues(state[0],o2)
         (newS2,_)=self.m2.getNextValues(state[1],o)
         return ((newS1,newS2),(o1,o2))
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)
         self.m2.step(o[0])
-        self.m1.step(o[1])                   
+        self.m1.step(o[1])                             
         self.state=s
         if verbose==True:
             self.debug()
@@ -257,17 +278,25 @@ class FeedbackAdd(SM):
         self.m2.start()
     def transduce(self,inputs,verbose=False):
         self.start()
+        o=[]
         if verbose==True:
             print "Start state: "+str(self.startState)
-            print " "+self.classTag
-        return [self.step(inp,verbose) for inp in inputs  if not self.done(self.state)]
+            for i in range(len(inputs)):
+                if not self.done(self.state):
+                    print
+                    print "Inputs["+str(i)+"]: "+str(inputs[i])
+                    print " "+self.classTag 
+                    o.append(self.step(inputs[i],verbose))
+            return o
+        else:
+            return [self.step(inp,verbose) for inp in inputs  if not self.done(self.state)]
 
 class WallController(SM):
     def __init__(self):
         SM.__init__(self)
         self.startState=0
     def getNextState(self,state,inp):
-        if inp=='undefined':  
+        if inp=='undefined': 
             return state
         else:
             return k*(dDesired-inp)
@@ -285,7 +314,7 @@ class Multiplier(SM):
         (i1,i2)=inp
         if i2 == 'undefined':   
             if state==None:
-                state=1    # 1*anything=anything
+                state=1    
             return state*i1
         else:
             return i1*i2
@@ -304,10 +333,14 @@ class Switch(SM):
         if self.condition(inp):
             self.case=1
             (ns1,o)=self.m1.getNextValues(s1,inp)
+            if isinstance(o,list) or isinstance(o,tuple):
+                o=o[-1]
             return ((ns1,s2),o)
         else:
             self.case=2
             (ns2,o)=self.m1.getNextValues(s2,inp)
+            if isinstance(o,list) or isinstance(o,tuple):
+                o=o[-1]
             return ((s1,ns2),o)
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)
@@ -346,7 +379,7 @@ class Mux(Switch):
         (ns1,o1)=self.m1.getNextValues(s1,inp)
         (ns2,o2)=self.m2.getNextValues(s2,inp)
         if self.condition(inp):
-            self.case=1   
+            self.case=1    
             return ((ns1,ns2),o1)
         else:
             self.case=2
@@ -366,7 +399,7 @@ class Accumulator(SM):
         SM.__init__(self)
         self.startState=initialValue
     def getNextValues(self,state,inp):
-        if inp=='undefined':  
+        if inp=='undefined': 
             return state,state
         return state+inp,state+inp
 
@@ -386,20 +419,24 @@ class If(SM):
             return ('runningM2',self.m2.startState)
     def getNextValues(self,state,inp):
         (ifState,smState)=state
-        if ifState=='start':     # first run
+        if ifState=='start':     
             (ifState,smState)=self.getFirstRealState(inp)
         if ifState=='runningM1':
             self.case=1
             (newS,o)=self.m1.getNextValues(state,inp)
+            if isinstance(o,list) or isinstance(o,tuple):
+                o=o[-1]
             return(('runningM1',newS),o)
         else:
             self.case=2
             (newS,o)=self.m2.getNextValues(state,inp)
+            if isinstance(o,list) or isinstance(o,tuple):
+                o=o[-1]
             return(('runningM2',newS),o)
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)
         self.state=s
-        if s[0]=='runningM1':  
+        if s[0]=='runningM1': 
             self.m1.step(inp)
         else:
             self.m2.step(inp)            
@@ -451,13 +488,15 @@ class Repeat(SM):
     def getNextValues(self,state,inp):
         (counter,smState)=state
         (smState,o)=self.m.getNextValues(smState,inp)
+        if isinstance(o,list) or isinstance(o,tuple):
+            o=o[-1]
         (counter,smState)=self.advanceIfDone(counter,smState)
         return ((counter,smState),o)
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)    
         self.m.step(inp)                      
         self.state=s
-        self.m.state=s[1]  # repeat 
+        self.m.state=s[1] 
         self.inp=inp
         self.out=o
         if verbose==True:
@@ -478,12 +517,12 @@ class Repeat(SM):
                 if not self.done(self.state):
                     print
                     print "Step: "+str(i)
+                    #print " "+self.classTag 
                     self.step(inputs[i],verbose)
         else:
             return [self.step(inp,verbose) for inp in inputs if not self.done(self.state)]
 
-class Sequence(SM):
-    # Run the first until done, then the next and so on. 
+class Sequence(SM): 
     def __init__(self,smList):
         SM.__init__(self)
         self.combinator=True
@@ -498,15 +537,18 @@ class Sequence(SM):
     def getNextValues(self,state,inp):
         (counter,smState)=state
         (smState,o)=self.smList[counter].getNextValues(smState,inp) 
-        (counter,smState)=self.advanceIfDone(counter,smState)      
+        if isinstance(o,list) or isinstance(o,tuple):
+            o=o[-1]
+        (counter,smState)=self.advanceIfDone(counter,smState)       
         return ((counter,smState),o)
     def step(self,inp,verbose=False):
-        self.smList[self.state[0]].step(inp)   
+        self.smList[self.state[0]].step(inp)   # current step
         (s,o)=self.getNextValues(self.state,inp)
         self.state=s       
-        self.smList[s[0]].state=s[1] 
+        self.smList[s[0]].state=s[1]
         self.inp=inp
         self.out=o
+        #print " "+self.classTag+" "+"Next State: "+str(s)
         if verbose==True:
             self.debug()
         return o
@@ -524,7 +566,8 @@ class Sequence(SM):
             for i in range(n):
                 if not self.done(self.state):
                     print
-                    print "Step: "+str(i) 
+                    print "Step: "+str(i)
+                    #print " "+self.classTag 
                     self.step(inputs[i],verbose)
         else:
             return [self.step(inp,verbose) for inp in inputs if not self.done(self.state)]
@@ -540,6 +583,8 @@ class RepeatUntil(SM):
     def getNextValues(self,state,inp):
         (condTrue,smState)=state
         (smState,o)=self.m.getNextValues(smState,inp)
+        if isinstance(o,list) or isinstance(o,tuple):
+            o=o[-1]
         condTrue=self.condition(inp)
         if self.m.done(smState) and not condTrue:
             smState=self.m.startState
@@ -568,13 +613,13 @@ class RepeatUntil(SM):
             for i in range(n):
                 if not self.done(self.state):
                     print
-                    print "Step: "+str(i) 
+                    print "Step: "+str(i)
+                    #print " "+self.classTag 
                     self.step(inputs[i],verbose)
         else:
             return [self.step(inp,verbose) for inp in inputs if not self.done(self.state)]
 
 class Until(RepeatUntil):
-    # Terminate either when self done or when the constituent done. 
     def getNextValues(self,state,inp):
         (condTrue,smState)=state
         (smState,o)=self.m.getNextValues(smState,inp)
@@ -587,6 +632,7 @@ class Until(RepeatUntil):
         (s,o)=self.getNextValues(self.state,inp)    
         self.m.step(inp)
         self.state=s
+        #self.m.state=s[1]    Done is done.
         self.inp=inp
         self.out=o
         if verbose==True:
@@ -606,7 +652,11 @@ class ParallelAdd(Parallel):
     def getNextValues(self,state,inp):
         (s1,s2)=state
         (newS1,o1)=self.m1.getNextValues(s1,inp)
+        if isinstance(o1,list) or isinstance(o1,tuple):
+            o1=o1[-1]
         (newS2,o2)=self.m2.getNextValues(s2,inp)
+        if isinstance(o2,list) or isinstance(o2,tuple):
+            o2=o2[-1]
         return ((newS1,newS2),o1+o2)
     def step(self,inp,verbose=False):
         (s,o)=self.getNextValues(self.state,inp)
@@ -620,10 +670,18 @@ class ParallelAdd(Parallel):
         return o
     def transduce(self,inputs,verbose=False):
         self.start()
+        o=[]
         if verbose==True:
             print "Start state: "+str(self.startState)
-            print  " "+self.classTag
-        return [self.step(inp,verbose) for inp in inputs  if not self.done(self.state)]
+            for i in range(len(inputs)):
+                if not self.done(self.state):
+                    print
+                    print "Inputs["+str(i)+"]: "+str(inputs[i])
+                    print " "+self.classTag 
+                    o.append(self.step(inputs[i],verbose))
+            return o
+        else:
+            return [self.step(inp,verbose) for inp in inputs  if not self.done(self.state)]
     def debug(self,indent=0):
         self.indent=indent
         if self.m1.combinator:
@@ -635,6 +693,7 @@ class ParallelAdd(Parallel):
         print "   "*(self.indent+1)+"(out: "+str(self.out)+")"        
         
 class Gain(SM):
+    # state=o[t]
     def __init__(self,gain):
         SM.__init__(self)
         self.startState=gain
@@ -643,9 +702,9 @@ class Gain(SM):
         return (self.state,o)
 
 class Diff(SM):
+    # state=i[t]
     def __init__(self,previousInput):
         SM.__init__(self)
-        # startState=i[-1]
         self.startState=previousInput 
     def getNextValues(self,state,inp):
         return (inp,inp-state)
@@ -656,7 +715,25 @@ class Adder(SM):
             return state
         (i1,i2)=inp
         return i1+i2
-        
+
+def delta(x):
+    if x==0:
+        return 1
+    return 0
+
+class Delta(SM):
+    def __init__(self):
+        SM.__init__(self)
+        self.startState=0
+    def getNextValues(self,state,inp):
+        state=delta(inp)
+        if inp=='undefined':
+            if state==-1:
+                return (None,1)
+            else:
+                return (None,0)
+        return (state,state)
+
 class LTISM(SM):
     def __init__(self,dCoeffs,cCoeffs):
         SM.__init__(self)
@@ -670,6 +747,6 @@ class LTISM(SM):
     def getNextValues(self,state,inp):
         (inputs,outputs)=state
         inputs=[inp]+inputs
-        currentOutput=sum([a*b for (a,b) in zip(self.dCoeffs,inputs)])+sum([a*b for (a,b) in zip(self.cCoeffs,outputs)])
+        currentOutput=sum([a*b for (a,b) in zip(self.dCoeffs,inputs)])+ \
+                       sum([a*b for (a,b) in zip(self.cCoeffs,outputs)])
         return ((inputs[:-1],[currentOutput]+outputs[:-1]),currentOutput)
-
