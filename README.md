@@ -43,7 +43,7 @@ p=1+T*k
 g=-T*k
 di=0.7
 m=Cascade(FeedbackAdd(Wire(),Cascade(Delay(0),Gain(p))),Cascade(Delay(0),Gain(g)))
-m.startState=((2,(0,g)),(0,p)) # Starting at distance 2.0
+m.startState=((2,(0,p)),(0,g)) # Starting at distance 2.0
 Y=m.transduce([di for i in range(50)])
 print Y
 X=[0]+[x+1 for x in X]
